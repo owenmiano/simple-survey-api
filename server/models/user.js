@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const {sequelize}=require("../dbCon")
 
-const Question = sequelize.define("Questions", {
+const User = sequelize.define("Users", {
   full_name: {
      type: DataTypes.STRING,
      allowNull: false
@@ -21,16 +21,9 @@ const Question = sequelize.define("Questions", {
    programming_stack: {
     type: DataTypes.STRING,
     allowNull: false
-   },
- 
-  certificate_data: {
-    type: DataTypes.STRING,
-    allowNull: false
-    
-  },
- 
+   }, 
 });
 
 
 
-module.exports=Question;
+module.exports=User;
