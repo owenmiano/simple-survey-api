@@ -1,0 +1,7 @@
+PORT=1000
+NODE_ENV=development
+DB_USER=database username
+DB_PASSWORD=database password
+DB_NAME=sky_survey_db
+HOST=localhost
+DIALECT=mysql
