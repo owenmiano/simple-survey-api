@@ -54,12 +54,16 @@ const questions = [
   },
 
   {
-    name: "certificates",
+    name: "certificate",
     type: "file",
     required: "yes",
     text: "Upload any of your certificates",
     description: "You can upload multiple (.pdf)",
   },
+  {
+    "name": "review"
+
+  }
 ];
 
 //   Fetch all list of questions
