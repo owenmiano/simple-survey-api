@@ -23,7 +23,7 @@ router.get("/questions/responses",questionControllers.fetchAllResponses);
 url: /api/questions/responses/email
 method: GET
 */
-router.get("/questions/responses/email",questionControllers.filterResponse);
+router.get("/questions/responses/:email",questionControllers.filterResponse);
 
 /* 
 url: /api/questions/responses/email

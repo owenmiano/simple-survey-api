@@ -141,30 +141,53 @@ exports.submitResponse = async (req, res) => {
 //  Fetch all responses
 exports.fetchAllResponses = async (req, res) => {
   try {
-    const responses = await User.findAll({ include: Certificate });
+    const page = parseInt(req.query.page) || 1; // Get the requested page number
+    const pageSize = parseInt(req.query.pageSize) || 5; // Number of responses per page
 
-    return res.status(200).json(responses);
+    // Calculate the offset to skip the appropriate number of records based on the page
+    const offset = (page - 1) * pageSize;
+
+    const responses = await User.findAndCountAll({
+      include: Certificate,
+      offset,
+      limit: pageSize,
+    });
+
+    const totalPages = Math.ceil(responses.count / pageSize);
+
+    return res.status(200).json({ responses: responses.rows, totalPages });
   } catch (error) {
     return res.status(500).json({ message: "Unable to fetch responses" });
   }
 };
 
-// filter responses based on email address
+// filter response by email
 exports.filterResponse = async (req, res) => {
   try {
-    const emailToFind = req.body.email;
-    const filteredResponse = await User.findOne({
+    const emailToFind = req.params.email;
+    const page = parseInt(req.query.page) || 1; // Get the requested page number
+    const pageSize = parseInt(req.query.pageSize) || 10; // Number of responses per page
+
+    // Calculate the offset to skip the appropriate number of records based on the page
+    const offset = (page - 1) * pageSize;
+
+    const filteredResponse = await User.findAndCountAll({
       include: Certificate,
       where: {
         email_address: emailToFind,
       },
+      offset,
+      limit: pageSize,
     });
 
-    return res.status(200).json(filteredResponse);
+    const totalPages = Math.ceil(filteredResponse.count / pageSize);
+
+    return res.status(200).json({ responses: filteredResponse.rows, totalPages });
   } catch (error) {
-    return res.status(500).json({ message: "Unable to fetch users by email" });
+    return res.status(500).json({ message: "Unable to fetch responses by email" });
   }
 };
+
 
 // find certificate by Id and Download
 exports.downloadCertificate = async (req, res) => {
