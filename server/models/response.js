@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const {sequelize}=require("../dbCon")
 
-const User = sequelize.define("Users", {
+const Response = sequelize.define("Response", {
   full_name: {
      type: DataTypes.STRING,
      allowNull: false
@@ -26,4 +26,4 @@ const User = sequelize.define("Users", {
 
 
 
-module.exports=User;
+module.exports=Response;

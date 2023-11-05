@@ -1,6 +1,6 @@
 const { DataTypes } = require("sequelize");
 const {sequelize}=require("../dbCon");
-const User = require("./user");
+const Response = require("./response");
 
 const Certificate = sequelize.define("Certificates", {
 
@@ -12,7 +12,7 @@ const Certificate = sequelize.define("Certificates", {
  
 });
  
-User.hasMany(Certificate);
-Certificate.belongsTo(User);
+Response.hasMany(Certificate);
+Certificate.belongsTo(Response);
 
 module.exports=Certificate;

@@ -1,4 +1,4 @@
-const User = require("../models/user");
+const Response = require("../models/response");
 const Certificate = require("../models/certificate");
 const { sequelize } = require("../dbCon");
 
@@ -54,7 +54,7 @@ const questions = [
   },
 
   {
-    name: "certificate",
+    name: "pdf",
     type: "file",
     required: "yes",
     text: "Upload any of your certificates",
@@ -91,7 +91,7 @@ exports.submitResponse = async (req, res) => {
     const transaction = await sequelize.transaction();
 
     // Create the user entry outside of the PDF upload loop
-    const newUser = await User.create(
+    const newResponse = await Response.create(
       {
         full_name,
         email_address,
@@ -103,7 +103,7 @@ exports.submitResponse = async (req, res) => {
     );
 
     // Assuming you have the newly created user's ID
-    const UserId = newUser.id;
+    const ResponseId = newResponse.id;
 
     // Create an array to store promises for each PDF upload operation
     const uploadPromises = pdfFiles.map(async (pdfUploadFile) => {
@@ -118,7 +118,7 @@ exports.submitResponse = async (req, res) => {
 
       // Create the Certificate entry and associate it with the user
       await Certificate.create(
-        { UserId, certificate_data: pdfPath },
+        { ResponseId, certificate_data: pdfPath },
         { transaction }
       );
     });
@@ -147,7 +147,7 @@ exports.fetchAllResponses = async (req, res) => {
     // Calculate the offset to skip the appropriate number of records based on the page
     const offset = (page - 1) * pageSize;
 
-    const responses = await User.findAndCountAll({
+    const responses = await Response.findAndCountAll({
       include: Certificate,
       offset,
       limit: pageSize,
@@ -171,7 +171,7 @@ exports.filterResponse = async (req, res) => {
     // Calculate the offset to skip the appropriate number of records based on the page
     const offset = (page - 1) * pageSize;
 
-    const filteredResponse = await User.findAndCountAll({
+    const filteredResponse = await Response.findAndCountAll({
       include: Certificate,
       where: {
         email_address: emailToFind,
