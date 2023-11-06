@@ -4,3 +4,4 @@ DB_PASSWORD=database password
 DB_NAME=sky_survey_db
 HOST=localhost
 DIALECT=mysql
+NODE_VERSION=16.10.0
