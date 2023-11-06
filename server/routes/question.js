@@ -26,7 +26,7 @@ method: GET
 router.get("/questions/responses/:email",questionControllers.filterResponse);
 
 /* 
-url: /api/questions/responses/email
+url: /api/questions/responses/certificates/:id
 method: GET
 */
 router.get("/questions/responses/certificates/:id",questionControllers.downloadCertificate);

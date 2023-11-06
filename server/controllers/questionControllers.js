@@ -61,7 +61,7 @@ const questions = [
     description: "You can upload multiple (.pdf)",
   },
   {
-    "name": "review"
+   name: "review"
 
   }
 ];
@@ -90,7 +90,6 @@ exports.submitResponse = async (req, res) => {
   try {
     const transaction = await sequelize.transaction();
 
-    // Create the user entry outside of the PDF upload loop
     const newResponse = await Response.create(
       {
         full_name,
@@ -102,7 +101,6 @@ exports.submitResponse = async (req, res) => {
       { transaction }
     );
 
-    // Assuming you have the newly created user's ID
     const ResponseId = newResponse.id;
 
     // Create an array to store promises for each PDF upload operation
@@ -153,9 +151,14 @@ exports.fetchAllResponses = async (req, res) => {
       limit: pageSize,
     });
 
-    const totalPages = Math.ceil(responses.count / pageSize);
-
-    return res.status(200).json({ responses: responses.rows, totalPages });
+    const totalResponses = responses.count;
+    const totalPages = Math.ceil(totalResponses / pageSize);
+    if (totalPages > 0) {
+      return res.status(200).json({ responses: responses.rows, totalPages });
+    } else {
+      // Handle the case where there's no data on any page
+      return res.status(404).json({ message: "No data found" });
+    }
   } catch (error) {
     return res.status(500).json({ message: "Unable to fetch responses" });
   }

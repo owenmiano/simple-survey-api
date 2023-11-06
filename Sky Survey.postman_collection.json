@@ -1,0 +1,180 @@
+{
+	"info": {
+		"_postman_id": "1b6d77fe-7a73-4f47-bdad-bfe2926b9e47",
+		"name": "Sky Survey",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "14493731"
+	},
+	"item": [
+		{
+			"name": "Fetch List of Questions",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/api/questions",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"questions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Fetch Responses",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/api/questions/responses?page=1",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"questions",
+						"responses"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Download Certificate",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/api/questions/responses/certificates/3",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"questions",
+						"responses",
+						"certificates",
+						"3"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Filter Response by Email",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{BASE_URL}}/api/questions/responses/owenmiash90@gmail.com",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"questions",
+						"responses",
+						"owenmiash90@gmail.com"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Submit responses",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "full_name",
+							"value": "Owen Miano Kabugi",
+							"type": "text"
+						},
+						{
+							"key": "email_address",
+							"value": "owenmiash90@gmail.com",
+							"type": "text"
+						},
+						{
+							"key": "description",
+							"value": "I am an experienced Full stack Engineer",
+							"type": "text"
+						},
+						{
+							"key": "gender",
+							"value": "Male",
+							"type": "text"
+						},
+						{
+							"key": "programming_stack",
+							"value": "REACT,SQL,MYSQL",
+							"type": "text"
+						},
+						{
+							"key": "pdf",
+							"type": "file",
+							"src": "/C:/Users/Home/3D Objects/Desktop/CREDENTIALS/Owen's CV.pdf"
+						},
+						{
+							"key": "pdf",
+							"type": "file",
+							"src": "/C:/Users/Home/3D Objects/Desktop/CREDENTIALS/Zuri Training Certificate.pdf"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{BASE_URL}}/api/questions/responses",
+					"host": [
+						"{{BASE_URL}}"
+					],
+					"path": [
+						"api",
+						"questions",
+						"responses"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "BASE_URL",
+			"value": "http://localhost:1000",
+			"type": "string"
+		}
+	]
+}

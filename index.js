@@ -4,8 +4,6 @@ const cors=require('cors')
 const app =express();
 const fileUpload = require('express-fileupload');
 const question=require('./server/routes/question')
-const morgan =require('morgan')
-
 const port=process.env.PORT;
 
 
@@ -23,11 +21,6 @@ app.use('/uploads', express.static('uploads'));
 //  APIS
 app.use('/api',question)
 
-
-
-if(process.env.NODE_ENV ==='development'){
-    app.use(morgan('dev'))
-}
 sequelize.sync().then(result=>{
 
     app.listen(port,console.log(`Server is running in ${process.env.NODE_ENV} mode on port:${port}`))
