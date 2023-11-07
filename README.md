@@ -5,7 +5,7 @@ Used to store REST API code, Postman Collection, database SQL file and ERD diagr
 Before you start the installation process, make sure you have the following prerequisites:
 
 - Node.js and npm installed on your server
-- Database setup (For this application, i used MySQL)
+- Database setup (MySQL)
 
 ## Installation Steps
 Git clone this repository by running the following in your terminal:
