@@ -23,7 +23,7 @@ app.use('/api',question)
 
 sequelize.sync().then(result=>{
 
-    app.listen(port,console.log(`Server is running in ${process.env.NODE_ENV} mode on port:${port}`))
+    app.listen(port,console.log(`Server is running on port:${port}`))
 }).catch(err => {
     console.log(err);
 })
