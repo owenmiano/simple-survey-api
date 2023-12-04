@@ -1,6 +1,5 @@
-const Response = require("../models/response");
-const Certificate = require("../models/certificate");
-const { sequelize } = require("../dbCon");
+const { connectDB } = require("../dbCon");
+const xml2js = require("xml2js");
 
 const questions = [
   {
@@ -61,25 +60,31 @@ const questions = [
     description: "You can upload multiple (.pdf)",
   },
   {
-   name: "review"
-
-  }
+    name: "review",
+  },
 ];
 
-//   Fetch all list of questions
 exports.fetchAllQuestions = async (req, res) => {
   try {
-    return res.status(200).json(questions);
+    const builder = new xml2js.Builder();
+    const xml = builder.buildObject({ questions: { question: questions } });
+    res.set("Content-Type", "application/xml");
+    return res.status(200).send(xml);
   } catch (error) {
+    console.error("Error:", error);
     return res.status(500).json({ message: "Unable to fetch questions" });
   }
 };
 
 // submit response to questions
 exports.submitResponse = async (req, res) => {
+  const connection = await connectDB();
+
   const { full_name, email_address, description, gender, programming_stack } =
     req.body;
   const { files } = req;
+
+  // ...
 
   if (!files || Object.keys(files).length === 0) {
     return res.status(400).json({ message: "No files were uploaded." });
@@ -88,22 +93,17 @@ exports.submitResponse = async (req, res) => {
   const pdfFiles = Array.isArray(files.pdf) ? files.pdf : [files.pdf];
 
   try {
-    const transaction = await sequelize.transaction();
+    await connection.beginTransaction();
 
-    const newResponse = await Response.create(
-      {
-        full_name,
-        email_address,
-        description,
-        gender,
-        programming_stack,
-      },
-      { transaction }
+    const [newResponse] = await connection.execute(
+      "INSERT INTO responses (full_name, email_address, description, gender, programming_stack) VALUES (?, ?, ?, ?, ?)",
+      [full_name, email_address, description, gender, programming_stack]
     );
 
-    const ResponseId = newResponse.id;
+    const ResponseId = newResponse.insertId;
 
-    // Create an array to store promises for each PDF upload operation
+    // ...
+
     const uploadPromises = pdfFiles.map(async (pdfUploadFile) => {
       const newPdfName = pdfUploadFile.name;
       const uploadPath =
@@ -111,93 +111,209 @@ exports.submitResponse = async (req, res) => {
 
       await pdfUploadFile.mv(uploadPath);
 
-      // Save the file path to the database
       const pdfPath = "uploads/" + newPdfName;
 
-      // Create the Certificate entry and associate it with the user
-      await Certificate.create(
-        { ResponseId, certificate_data: pdfPath },
-        { transaction }
+      await connection.execute(
+        "INSERT INTO certificates (ResponseId, certificate_data) VALUES (?, ?)",
+        [ResponseId, pdfPath]
       );
     });
-
-    // Wait for all PDF upload operations to complete
     await Promise.all(uploadPromises);
 
-    // Commit the transaction for all PDF uploads
-    await transaction.commit();
+    await connection.commit();
 
-    // Return a success response when all files are uploaded and saved
     return res.status(200).json({ message: "Files uploaded successfully." });
   } catch (error) {
-    // Handle errors that occurred during the transaction
     console.error(error);
     return res.status(500).json({ message: "Error uploading files." });
   }
 };
-
 //  Fetch all responses
 exports.fetchAllResponses = async (req, res) => {
+  const connection = await connectDB();
+
   try {
-    const page = parseInt(req.query.page) || 1; // Get the requested page number
-    const pageSize = parseInt(req.query.pageSize) || 5; // Number of responses per page
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 4;
 
-    // Calculate the offset to skip the appropriate number of records based on the page
-    const offset = (page - 1) * pageSize;
+    // Fetch responses with pagination using raw queries
+    const [rows] = await connection.execute(`
+    SELECT
+    responses.*,
+    GROUP_CONCAT(certificates.certificateid) as certificate_id,
+    GROUP_CONCAT(certificates.certificate_data) as certificate_data
+  FROM responses
+  LEFT JOIN certificates ON responses.id = certificates.ResponseId
+  GROUP BY responses.id;
+    `);
+    if (rows.length > 0) {
+      //       // Calculate total pages
+      const totalPages = Math.ceil(rows.length / pageSize);
 
-    const responses = await Response.findAndCountAll({
-      include: Certificate,
-      offset,
-      limit: pageSize,
-    });
+      // Calculate start index and end index for the current page
+      const startIndex = (page - 1) * pageSize;
 
-    const totalResponses = responses.count;
-    const totalPages = Math.ceil(totalResponses / pageSize);
-    if (totalPages > 0) {
-      return res.status(200).json({ responses: responses.rows, totalPages });
+      // Calculate start index and end index for the current page
+      const endIndex = startIndex + pageSize;
+
+      // Extract responses for the current page
+      const responsesForPage = rows.slice(startIndex, endIndex);
+
+      const xmlData = {
+        responses: [],
+      };
+
+      responsesForPage.forEach((response) => {
+        // Split concatenated values into arrays
+        const certificateIds = response.certificate_id
+          ? response.certificate_id.split(",")
+          : [];
+        const certificateData = response.certificate_data
+          ? response.certificate_data.split(",")
+          : [];
+        // Create a new response with certificates array
+        const newResponse = {
+          id: response.id,
+          full_name: response.full_name,
+          email_address: response.email_address,
+          description: response.description,
+          gender: response.gender,
+          programming_stack: response.programming_stack,
+          createdAt: response.createdAt.toISOString(),
+          certificates: [],
+        };
+
+        // Populate certificates array
+        for (let i = 0; i < certificateIds.length; i++) {
+          newResponse.certificates.push({
+            certificateid: certificateIds[i],
+            certificate_data: certificateData[i],
+          });
+        }
+
+        xmlData.responses.push(newResponse);
+      });
+
+      const xmlBuilder = new xml2js.Builder();
+      const xml = xmlBuilder.buildObject({
+        responses: {
+          response: xmlData.responses,
+          pagination: {
+            page,
+            pageSize,
+            totalPages,
+          },
+        },
+      });
+
+      res.set("Content-Type", "application/xml");
+      return res.status(200).send(xml);
     } else {
       // Handle the case where there's no data on any page
       return res.status(404).json({ message: "No data found" });
     }
   } catch (error) {
+    console.error(error);
     return res.status(500).json({ message: "Unable to fetch responses" });
   }
 };
 
 // filter response by email
 exports.filterResponse = async (req, res) => {
+  const connection = await connectDB();
+
   try {
     const emailToFind = req.params.email;
-    const page = parseInt(req.query.page) || 1; // Get the requested page number
-    const pageSize = parseInt(req.query.pageSize) || 10; // Number of responses per page
-
     // Calculate the offset to skip the appropriate number of records based on the page
-    const offset = (page - 1) * pageSize;
+    const [rows] = await connection.execute(
+      `
+          SELECT
+      responses.*,
+      GROUP_CONCAT(certificates.certificateid) as certificate_id,
+      GROUP_CONCAT(certificates.certificate_data) as certificate_data
+    FROM responses
+    LEFT JOIN certificates ON responses.id = certificates.ResponseId
+    WHERE responses.email_address = ?
+    GROUP BY responses.id;
+    
+`,
+      [emailToFind]
+    );
 
-    const filteredResponse = await Response.findAndCountAll({
-      include: Certificate,
-      where: {
-        email_address: emailToFind,
-      },
-      offset,
-      limit: pageSize,
-    });
+    if (rows.length > 0) {
+      const xmlData = {
+        responses: [],
+      };
 
-    const totalPages = Math.ceil(filteredResponse.count / pageSize);
+      rows.forEach((response) => {
+        // Split concatenated values into arrays
+        const certificateIds = response.certificate_id
+          ? response.certificate_id.split(",")
+          : [];
+        const certificateData = response.certificate_data
+          ? response.certificate_data.split(",")
+          : [];
 
-    return res.status(200).json({ responses: filteredResponse.rows, totalPages });
+        // Create a new response with certificates array
+        const newResponse = {
+          id: response.id,
+          full_name: response.full_name,
+          email_address: response.email_address,
+          description: response.description,
+          gender: response.gender,
+          programming_stack: response.programming_stack,
+          createdAt: response.createdAt.toISOString(),
+          certificates: [],
+        };
+
+        // Populate certificates array
+        for (let i = 0; i < certificateIds.length; i++) {
+          newResponse.certificates.push({
+            certificateid: certificateIds[i],
+            certificate_data: certificateData[i],
+          });
+        }
+
+        xmlData.responses.push(newResponse);
+      });
+
+      const xmlBuilder = new xml2js.Builder();
+      const xml = xmlBuilder.buildObject({
+        responses: {
+          response: xmlData.responses,
+        },
+      });
+
+      res.set("Content-Type", "application/xml");
+      return res.status(200).send(xml);
+    } else {
+      // Handle the case where there's no data on any page
+      return res.status(404).json({ message: "No data found" });
+    }
   } catch (error) {
-    return res.status(500).json({ message: "Unable to fetch responses by email" });
+    return res
+      .status(500)
+      .json({ message: "Unable to fetch responses by email" });
   }
 };
 
-
 // find certificate by Id and Download
 exports.downloadCertificate = async (req, res) => {
+  const connection = await connectDB();
+
   try {
     const certificateId = req.params.id;
-    const certificate = await Certificate.findByPk(certificateId);
+    const [rows] = await connection.execute(
+      `
+    SELECT *
+    FROM certificates
+    WHERE certificateid = ?
+`,
+      [certificateId]
+    );
 
+    const certificate = rows[0];
     const relativeFilePath = certificate.certificate_data;
     const absoluteFilePath =
       require("path").resolve("./") + "/server/" + relativeFilePath;
